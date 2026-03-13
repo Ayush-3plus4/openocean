@@ -1,0 +1,23 @@
+{
+  "name": "openocean",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Your personal AI assistant. Clean, secure, malware-free.",
+  "author": "Ayush-3plus4",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r dev",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0",
+    "@types/node": "^22.0.0"
+  }
+}
