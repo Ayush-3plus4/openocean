@@ -1,0 +1,19 @@
+{
+  "name": "@openocean/gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "node --watch --experimental-strip-types src/index.ts",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.10"
+  }
+}
