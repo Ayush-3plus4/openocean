@@ -1,8 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws'
 import { randomUUID } from 'crypto'
 
-// --- Types ---
-// A Session is one conversation with one user on one channel
 interface Session {
   id: string
   channel: string
@@ -10,7 +8,6 @@ interface Session {
   lastSeen: Date
 }
 
-// A Message is anything sent to the Gateway
 interface GatewayMessage {
   type: 'ping' | 'message' | 'status'
   sessionId?: string
@@ -19,15 +16,13 @@ interface GatewayMessage {
 
 interface GatewayConfig {
   port: number
-  host: string // Always 127.0.0.1 in OpenOcean
+  host: string
 }
 
-// --- Gateway ---
 export function createGateway(config: GatewayConfig) {
   const sessions = new Map<string, Session>()
   const clients = new Map<string, WebSocket>()
 
-  // Audit log — every event is recorded
   function audit(event: string, data?: unknown) {
     const entry = {
       timestamp: new Date().toISOString(),
@@ -40,7 +35,6 @@ export function createGateway(config: GatewayConfig) {
   function handleMessage(ws: WebSocket, sessionId: string, raw: string) {
     let msg: GatewayMessage
 
-    // Safely parse incoming messages — never trust raw input
     try {
       msg = JSON.parse(raw) as GatewayMessage
     } catch {
@@ -64,21 +58,19 @@ export function createGateway(config: GatewayConfig) {
       return
     }
 
-    // More message types will be added as we build channels + agent
     ws.send(JSON.stringify({ type: 'ack', sessionId }))
   }
 
   function start() {
     const wss = new WebSocketServer({
       port: config.port,
-      host: config.host, // Security: always 127.0.0.1
+      host: config.host,
     })
 
-    console.log(🌊 OpenOcean Gateway running on :)
+    console.log('[OpenOcean] Gateway running on ' + config.host + ':' + config.port)
     audit('gateway_started', { host: config.host, port: config.port })
 
     wss.on('connection', (ws) => {
-      // Every connection gets a unique session ID
       const sessionId = randomUUID()
 
       const session: Session = {
@@ -93,7 +85,6 @@ export function createGateway(config: GatewayConfig) {
 
       audit('session_created', { sessionId })
 
-      // Send welcome message
       ws.send(JSON.stringify({
         type: 'welcome',
         sessionId,
@@ -101,10 +92,8 @@ export function createGateway(config: GatewayConfig) {
       }))
 
       ws.on('message', (data) => {
-        // Update last seen time
         const s = sessions.get(sessionId)
         if (s) s.lastSeen = new Date()
-
         handleMessage(ws, sessionId, data.toString())
       })
 
