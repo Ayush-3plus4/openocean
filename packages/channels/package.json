@@ -1,0 +1,15 @@
+{
+  "name": "@openocean/channels",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "node --watch --experimental-strip-types src/index.ts",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "grammy": "^1.21.0"
+  }
+}
