@@ -26,6 +26,9 @@ importers:
 
   packages/gateway:
     dependencies:
+      '@openocean/agent':
+        specifier: workspace:*
+        version: link:../agent
       ws:
         specifier: ^8.18.0
         version: 8.19.0

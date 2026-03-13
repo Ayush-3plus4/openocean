@@ -1,22 +1,28 @@
 import { WebSocketServer, WebSocket } from 'ws'
 import { randomUUID } from 'crypto'
+import type { Orchestrator } from './orchestrator.ts'
 
 interface Session {
   id: string
+  userId: string
   channel: string
   connectedAt: Date
   lastSeen: Date
 }
 
 interface GatewayMessage {
-  type: 'ping' | 'message' | 'status'
+  type: 'ping' | 'message' | 'status' | 'reset' | 'spend'
   sessionId?: string
-  payload?: unknown
+  userId?: string
+  text?: string
+  channel?: string
+  model?: string
 }
 
 interface GatewayConfig {
   port: number
   host: string
+  orchestrator: Orchestrator
 }
 
 export function createGateway(config: GatewayConfig) {
@@ -24,17 +30,15 @@ export function createGateway(config: GatewayConfig) {
   const clients = new Map<string, WebSocket>()
 
   function audit(event: string, data?: unknown) {
-    const entry = {
+    console.log('[AUDIT]', JSON.stringify({
       timestamp: new Date().toISOString(),
       event,
       data,
-    }
-    console.log('[AUDIT]', JSON.stringify(entry))
+    }))
   }
 
-  function handleMessage(ws: WebSocket, sessionId: string, raw: string) {
+  async function handleMessage(ws: WebSocket, sessionId: string, raw: string) {
     let msg: GatewayMessage
-
     try {
       msg = JSON.parse(raw) as GatewayMessage
     } catch {
@@ -44,16 +48,60 @@ export function createGateway(config: GatewayConfig) {
 
     audit('message_received', { sessionId, type: msg.type })
 
+    // Ping
     if (msg.type === 'ping') {
       ws.send(JSON.stringify({ type: 'pong', sessionId }))
       return
     }
 
+    // Status
     if (msg.type === 'status') {
       ws.send(JSON.stringify({
         type: 'status',
         sessions: sessions.size,
         uptime: process.uptime(),
+        spend: config.orchestrator.spendSummary(),
+      }))
+      return
+    }
+
+    // Spend summary
+    if (msg.type === 'spend') {
+      ws.send(JSON.stringify({
+        type: 'spend',
+        ...config.orchestrator.spendSummary(),
+      }))
+      return
+    }
+
+    // Reset session conversation
+    if (msg.type === 'reset') {
+      config.orchestrator.resetSession(sessionId)
+      ws.send(JSON.stringify({ type: 'reset', sessionId }))
+      return
+    }
+
+    // Main message — send to orchestrator
+    if (msg.type === 'message' && msg.text) {
+      const session = sessions.get(sessionId)
+      const userId = msg.userId ?? session?.userId ?? 'unknown'
+      const channel = msg.channel ?? session?.channel ?? 'websocket'
+
+      const response = await config.orchestrator.handle({
+        userId,
+        sessionId,
+        text: msg.text,
+        channel,
+      })
+
+      ws.send(JSON.stringify({
+        type: 'reply',
+        sessionId,
+        text: response.text,
+        tokensUsed: response.tokensUsed,
+        costUsd: response.costUsd,
+        blocked: response.blocked,
+        blockReason: response.blockReason,
       }))
       return
     }
@@ -75,14 +123,14 @@ export function createGateway(config: GatewayConfig) {
 
       const session: Session = {
         id: sessionId,
-        channel: 'unknown',
+        userId: 'unknown',
+        channel: 'websocket',
         connectedAt: new Date(),
         lastSeen: new Date(),
       }
 
       sessions.set(sessionId, session)
       clients.set(sessionId, ws)
-
       audit('session_created', { sessionId })
 
       ws.send(JSON.stringify({
