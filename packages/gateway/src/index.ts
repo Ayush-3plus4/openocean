@@ -1,20 +1,25 @@
+import { config } from 'dotenv'
+import { resolve } from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
+config({ path: resolve(__dirname, '../../../.env') })
+
 import { createGateway } from './gateway.ts'
 import { Orchestrator } from './orchestrator.ts'
 
-// --- Config ---
-// In the future this will come from a config file.
-// For now we set it here for testing.
+const model = process.env.OPENOCEAN_MODEL ?? 'mock'
+const apiKey = process.env.OPENOCEAN_API_KEY ?? 'mock'
+
+console.log('[OpenOcean] Starting with model: ' + model)
+
 const orchestrator = new Orchestrator({
-  // Security
   allowedUsers: ['test-user-1'],
   maxTokensPerSession: 50000,
   maxTokensPerDay: 200000,
   maxUsdPerDay: 2.00,
-
-  // Agent — set your real API key here to test
-  model: 'claude-sonnet-4-6',
-  apiKey: process.env.ANTHROPIC_API_KEY ?? '',
-
+  model,
+  apiKey,
   systemPrompt: 'You are OpenOcean, a helpful personal AI assistant. You are clean, secure, and private.',
 })
 

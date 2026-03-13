@@ -1,9 +1,3 @@
-// ============================================
-// OpenOcean Agent
-// Takes a message, calls the right AI,
-// respects spend limits, returns a reply.
-// ============================================
-
 import { getModel } from './models.ts'
 import {
   anthropicAdapter,
@@ -11,11 +5,12 @@ import {
   googleAdapter,
   deepseekAdapter,
   qwenAdapter,
+  mockAdapter,
 } from './providers.ts'
 import type { Message, CompletionRequest } from './providers.ts'
 
 export interface AgentConfig {
-  model: string        // e.g. 'claude-sonnet-4-6'
+  model: string
   apiKey: string
   systemPrompt?: string
   maxTokensPerReply?: number
@@ -35,43 +30,44 @@ export class Agent {
 
   constructor(config: AgentConfig) {
     this.config = config
-    // Validate the model exists immediately
-    getModel(config.model)
+    if (config.model !== 'mock') getModel(config.model)
     console.log('[Agent] Ready using model: ' + config.model)
   }
 
   async chat(userMessage: string): Promise<AgentResponse> {
-    const modelDef = getModel(this.config.model)
-
-    // Add user message to history
     this.history.push({ role: 'user', content: userMessage })
 
+    const isMock = this.config.model === 'mock'
+    const modelDef = isMock ? null : getModel(this.config.model)
+
     const request: CompletionRequest = {
-      model: modelDef,
+      model: modelDef ?? {
+        provider: 'mock' as any,
+        modelId: 'mock',
+        label: 'Mock',
+        costPer1kInputTokens: 0,
+        costPer1kOutputTokens: 0,
+        maxTokens: 1000,
+      },
       messages: this.history,
       systemPrompt: this.config.systemPrompt,
       maxTokens: this.config.maxTokensPerReply,
     }
 
-    // Pick the right provider adapter
-    const adapter = this.getAdapter(modelDef.provider)
+    const adapter = this.getAdapter(isMock ? 'mock' : modelDef!.provider)
 
-    console.log('[Agent] Calling ' + modelDef.provider + ' / ' + modelDef.label + '...')
+    console.log('[Agent] Calling ' + (isMock ? 'mock' : modelDef!.provider) + '...')
 
     const response = await adapter.complete(request, this.config.apiKey)
 
-    // Add assistant reply to history so context is preserved
     this.history.push({ role: 'assistant', content: response.content })
 
-    // Calculate cost
-    const inputCost = (response.inputTokens / 1000) * modelDef.costPer1kInputTokens
-    const outputCost = (response.outputTokens / 1000) * modelDef.costPer1kOutputTokens
-    const costUsd = inputCost + outputCost
+    const costUsd = modelDef
+      ? (response.inputTokens / 1000) * modelDef.costPer1kInputTokens +
+        (response.outputTokens / 1000) * modelDef.costPer1kOutputTokens
+      : 0
 
-    console.log(
-      '[Agent] Done | ' +
-      response.totalTokens + ' tokens | $' + costUsd.toFixed(6)
-    )
+    console.log('[Agent] Done | ' + response.totalTokens + ' tokens | $' + costUsd.toFixed(6))
 
     return {
       content: response.content,
@@ -82,20 +78,17 @@ export class Agent {
     }
   }
 
-  // Reset conversation history
   reset(): void {
     this.history = []
     console.log('[Agent] Conversation reset')
   }
 
-  // Switch to a different model mid-session
   switchModel(modelKey: string): void {
-    getModel(modelKey) // validate first
+    if (modelKey !== 'mock') getModel(modelKey)
     this.config.model = modelKey
     console.log('[Agent] Switched to model: ' + modelKey)
   }
 
-  // Get current conversation history
   getHistory(): Message[] {
     return [...this.history]
   }
@@ -107,6 +100,7 @@ export class Agent {
       case 'google':    return googleAdapter
       case 'deepseek':  return deepseekAdapter
       case 'qwen':      return qwenAdapter
+      case 'mock':      return mockAdapter
       default:
         throw new Error('No adapter for provider: ' + provider)
     }

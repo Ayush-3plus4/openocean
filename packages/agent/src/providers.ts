@@ -287,3 +287,32 @@ export const qwenAdapter: ProviderAdapter = {
     }
   }
 }
+// --------------------------------------------
+// Mock Provider (for testing without an API key)
+// --------------------------------------------
+export const mockAdapter: ProviderAdapter = {
+  async complete(request) {
+    const lastMessage = request.messages[request.messages.length - 1]
+
+    // Simulate a small delay like a real API
+    await new Promise(r => setTimeout(r, 800))
+
+    const replies: Record<string, string> = {
+      'hello': 'Hello! I am OpenOcean, your personal AI assistant. I can help you manage tasks, answer questions, browse the web, and much more. What would you like to do?',
+      'what can you do': 'I can help you with: answering questions, managing your calendar, sending emails, browsing the web, running automations, and much more. I run entirely on your machine — your data never leaves.',
+      'who are you': 'I am OpenOcean — a clean, secure, open-source personal AI assistant. I run locally on your machine and support Claude, GPT, Gemini, DeepSeek, and Qwen.',
+    }
+
+    const key = lastMessage.content.toLowerCase().replace(/[^a-z ]/g, '').trim()
+    const content = replies[key] ?? 'I understood your message: "' + lastMessage.content + '". In production I would respond using your chosen AI model. Add your API key to .env to enable real AI responses.'
+
+    return {
+      content,
+      inputTokens: 50,
+      outputTokens: content.split(' ').length,
+      totalTokens: 50 + content.split(' ').length,
+      model: 'mock',
+      provider: 'mock',
+    }
+  }
+}
