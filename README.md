@@ -71,16 +71,16 @@ Then message your bot on Telegram or Discord — OpenOcean will reply instantly.
 
 ## Project structure
 
-openocean/
-├── packages/
-│   ├── gateway/     # WebSocket control plane
-│   ├── agent/       # AI runtime - multi-model support
-│   ├── channels/    # Telegram, Discord adapters
-│   ├── cli/         # Onboarding wizard
-│   └── storage/     # Local encrypted storage
-├── apps/
-│   └── web/         # Control dashboard (coming soon)
-└── scripts/         # Build and release scripts
+    openocean/
+    ├── packages/
+    │   ├── gateway/     # WebSocket control plane
+    │   ├── agent/       # AI runtime - multi-model support
+    │   ├── channels/    # Telegram, Discord adapters
+    │   ├── cli/         # Onboarding wizard
+    │   └── storage/     # Local encrypted storage
+    ├── apps/
+    │   └── web/         # Control dashboard (coming soon)
+    └── scripts/         # Build and release scripts
 
 ## Security
 
