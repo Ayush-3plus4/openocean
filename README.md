@@ -49,3 +49,66 @@ No API key yet? Use the built-in mock provider to try OpenOcean for free.
 - Git
 
 ### Install
+
+git clone https://github.com/Ayush-3plus4/openocean.git
+cd openocean
+pnpm install
+
+### Set up
+
+Run the onboarding wizard:
+cd packages/cli
+node --experimental-strip-types src/index.ts onboard
+
+The wizard will ask you which AI provider you want to use, guide you through getting an API key, and set up your messaging channels step by step.
+
+### Start
+
+cd packages/gateway
+pnpm dev
+
+Then message your bot on Telegram or Discord — OpenOcean will reply instantly.
+
+## Project structure
+
+openocean/
+├── packages/
+│   ├── gateway/     # WebSocket control plane
+│   ├── agent/       # AI runtime - multi-model support
+│   ├── channels/    # Telegram, Discord adapters
+│   ├── cli/         # Onboarding wizard
+│   └── storage/     # Local encrypted storage
+├── apps/
+│   └── web/         # Control dashboard (coming soon)
+└── scripts/         # Build and release scripts
+
+## Security
+
+OpenOcean is built security-first:
+
+- Always binds to 127.0.0.1 — never exposed to the internet by default
+- Allowlist-based access — only approved users can message your assistant
+- Hard API spend limits — no surprise bills
+- Full audit log — every event timestamped and recorded
+- No telemetry — nothing phoned home
+- MIT licensed — read every line
+
+## Roadmap
+
+- WhatsApp channel
+- Slack channel
+- Web control dashboard
+- Spend dashboard with real-time cost tracking
+- Session replay and time-travel debugging
+- OpenOcean Hub — curated skill registry
+- Incognito sessions — zero-log ephemeral mode
+
+## License
+
+MIT — do whatever you want with it.
+
+## Contributing
+
+Pull requests welcome. See CONTRIBUTING.md for guidelines.
+
+Built by Ayush-3plus4 and contributors.
