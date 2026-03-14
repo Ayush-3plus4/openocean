@@ -1,30 +1,31 @@
 // ============================================
 // OpenOcean Orchestrator
-// Connects Gateway + Security + Agent together.
-// This is the main flow for every message.
+// Now with full spend tracking per session
 // ============================================
 
 import { Allowlist, SpendGuard, PermissionChecker } from './security.ts'
 import { Agent } from '../../agent/src/agent.ts'
+import { SpendTracker } from '../../storage/src/spend.ts'
+import { resolve } from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 export interface OrchestratorConfig {
-  // Security
   allowedUsers: string[]
   maxTokensPerSession: number
   maxTokensPerDay: number
   maxUsdPerDay: number
-
-  // Agent
   model: string
   apiKey: string
   systemPrompt?: string
 }
 
 export interface IncomingMessage {
-  userId: string        // e.g. 'telegram:123456'
+  userId: string
   sessionId: string
   text: string
-  channel: string       // e.g. 'telegram', 'discord'
+  channel: string
 }
 
 export interface OutgoingMessage {
@@ -41,6 +42,7 @@ export class Orchestrator {
   private spendGuard: SpendGuard
   private permissions: PermissionChecker
   private agents: Map<string, Agent> = new Map()
+  private spendTracker: SpendTracker
   private config: OrchestratorConfig
 
   constructor(config: OrchestratorConfig) {
@@ -62,6 +64,10 @@ export class Orchestrator {
       granted: ['filesystem', 'network'],
     })
 
+    this.spendTracker = new SpendTracker({
+      dataDir: resolve(__dirname, '../../../.openocean'),
+    })
+
     console.log('[Orchestrator] Ready')
     console.log('[Orchestrator] Allowed users: ' + config.allowedUsers.length)
     console.log('[Orchestrator] Model: ' + config.model)
@@ -70,21 +76,17 @@ export class Orchestrator {
   async handle(msg: IncomingMessage): Promise<OutgoingMessage> {
     console.log('[Orchestrator] Message from ' + msg.userId + ' via ' + msg.channel)
 
-    // --- Step 1: Allowlist check ---
     if (!this.allowlist.isAllowed(msg.userId)) {
-      console.log('[Orchestrator] Blocked unknown user: ' + msg.userId)
       return {
         sessionId: msg.sessionId,
-        text: 'You are not authorized to use this assistant. Contact the owner to get access.',
+        text: 'You are not authorized. Contact the owner to get access.',
         blocked: true,
         blockReason: 'not_in_allowlist',
       }
     }
 
-    // --- Step 2: Spend guard check ---
     const spendCheck = this.spendGuard.check(msg.sessionId)
     if (!spendCheck.allowed) {
-      console.log('[Orchestrator] Spend limit hit for session: ' + msg.sessionId)
       return {
         sessionId: msg.sessionId,
         text: 'Spend limit reached: ' + spendCheck.reason,
@@ -93,15 +95,25 @@ export class Orchestrator {
       }
     }
 
-    // --- Step 3: Get or create agent for this session ---
     const agent = this.getOrCreateAgent(msg.sessionId)
 
-    // --- Step 4: Call the AI ---
     try {
       const response = await agent.chat(msg.text)
 
-      // Record token usage in spend guard
       this.spendGuard.record(msg.sessionId, response.tokensUsed)
+
+      // Record in spend tracker
+      this.spendTracker.record({
+        sessionId: msg.sessionId,
+        channel: msg.channel,
+        userId: msg.userId,
+        model: response.model,
+        provider: response.provider,
+        inputTokens: Math.floor(response.tokensUsed * 0.6),
+        outputTokens: Math.floor(response.tokensUsed * 0.4),
+        totalTokens: response.tokensUsed,
+        costUsd: response.costUsd,
+      })
 
       return {
         sessionId: msg.sessionId,
@@ -111,33 +123,47 @@ export class Orchestrator {
       }
     } catch (err) {
       const error = err as Error
-      console.log('[Orchestrator] Agent error: ' + error.message)
       return {
         sessionId: msg.sessionId,
-        text: 'Something went wrong calling the AI: ' + error.message,
+        text: 'Something went wrong: ' + error.message,
         blocked: true,
         blockReason: 'agent_error',
       }
     }
   }
 
-  // Approve a new user at runtime
   approveUser(userId: string): void {
     this.allowlist.approve(userId)
   }
 
-  // Get spend summary
   spendSummary() {
     return this.spendGuard.summary()
   }
 
-  // Switch model for a session
+  // Full detailed spend report
+  spendReport(): string {
+    const summary = this.spendTracker.todaySummary()
+    return this.spendTracker.formatSummary(summary)
+  }
+
+  // Last 7 days
+  weeklyReport(): string {
+    const days = this.spendTracker.lastNDays(7)
+    let text = 'Weekly spend report\n'
+    text += '================================\n'
+    for (const day of days) {
+      if (day.totalMessages === 0) continue
+      text += day.date + ': ' + day.totalMessages + ' messages, ' +
+        day.totalTokens + ' tokens, $' + day.totalCostUsd.toFixed(6) + '\n'
+    }
+    return text
+  }
+
   switchModel(sessionId: string, modelKey: string): void {
     const agent = this.agents.get(sessionId)
     if (agent) agent.switchModel(modelKey)
   }
 
-  // Reset a session conversation
   resetSession(sessionId: string): void {
     const agent = this.agents.get(sessionId)
     if (agent) agent.reset()

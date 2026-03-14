@@ -45,7 +45,7 @@ const gateway = createGateway({
 
 gateway.start()
 
-// Start Telegram if configured
+// Telegram
 if (telegramToken) {
   const telegram = new TelegramChannel({
     token: telegramToken,
@@ -60,6 +60,12 @@ if (telegramToken) {
         return {
           text: 'Spend today (' + summary.date + '):\nTokens: ' + summary.dailyTokens + '\nCost: $' + summary.dailyUsd.toFixed(6)
         }
+      }
+      if (msg.text === '/report') {
+        return { text: orchestrator.spendReport() }
+      }
+      if (msg.text === '/week') {
+        return { text: orchestrator.weeklyReport() }
       }
       if (msg.text === '/model') {
         return { text: 'Current model: ' + model }
@@ -78,7 +84,7 @@ if (telegramToken) {
   console.log('[Telegram] No token found — skipping')
 }
 
-// Start Discord if configured
+// Discord
 if (discordToken) {
   const discord = new DiscordChannel({
     token: discordToken,
@@ -93,6 +99,12 @@ if (discordToken) {
         return {
           text: 'Spend today (' + summary.date + '):\nTokens: ' + summary.dailyTokens + '\nCost: $' + summary.dailyUsd.toFixed(6)
         }
+      }
+      if (msg.text === '/report') {
+        return { text: orchestrator.spendReport() }
+      }
+      if (msg.text === '/week') {
+        return { text: orchestrator.weeklyReport() }
       }
       if (msg.text === '/model') {
         return { text: 'Current model: ' + model }
