@@ -112,3 +112,9 @@ MIT — do whatever you want with it.
 Pull requests welcome. See CONTRIBUTING.md for guidelines.
 
 Built by Ayush-3plus4 and contributors.
+
+## Community
+
+- Reddit: https://www.reddit.com/r/selfhosted/comments/1rzrkdv
+- npm: https://www.npmjs.com/package/openocean
+- GitHub Issues: https://github.com/Ayush-3plus4/openocean/issues
