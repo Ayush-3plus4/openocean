@@ -9,6 +9,7 @@ import { createGateway } from './gateway.ts'
 import { Orchestrator } from './orchestrator.ts'
 import { TelegramChannel } from '../../channels/src/telegram.ts'
 import { DiscordChannel } from '../../channels/src/discord.ts'
+import { WhatsAppChannel } from '../../channels/src/whatsapp.ts'
 
 const model = process.env.OPENOCEAN_MODEL ?? 'mock'
 const apiKey = process.env.OPENOCEAN_API_KEY ?? 'mock'
@@ -21,6 +22,9 @@ const telegramAllowedUsers = (process.env.TELEGRAM_ALLOWED_USERS ?? '')
 const discordAllowedUsers = (process.env.DISCORD_ALLOWED_USERS ?? '')
   .split(',').map(s => s.trim()).filter(Boolean)
 
+const whatsappAllowedNumbers = (process.env.WHATSAPP_ALLOWED_NUMBERS ?? '')
+  .split(',').map(s => s.trim()).filter(Boolean)
+
 console.log('[OpenOcean] Starting with model: ' + model)
 
 const orchestrator = new Orchestrator({
@@ -28,6 +32,7 @@ const orchestrator = new Orchestrator({
     'test-user-1',
     ...telegramAllowedUsers.map(id => 'telegram:' + id),
     ...discordAllowedUsers.map(id => 'discord:' + id),
+    ...whatsappAllowedNumbers.map(n => 'whatsapp:' + n),
   ],
   maxTokensPerSession: 50000,
   maxTokensPerDay: 200000,
@@ -121,4 +126,38 @@ if (discordToken) {
   discord.start()
 } else {
   console.log('[Discord] No token found — skipping')
+}
+if (process.env.WHATSAPP_ENABLED === 'true') {
+  const whatsapp = new WhatsAppChannel({
+    authDir: resolve(__dirname, '../../../.openocean/whatsapp-auth'),
+    allowedNumbers: whatsappAllowedNumbers,
+    onMessage: async (msg) => {
+      if (msg.text === '/reset') {
+        orchestrator.resetSession('whatsapp-' + msg.userId)
+        return { text: 'Conversation reset!' }
+      }
+      if (msg.text === '/spend') {
+        const summary = orchestrator.spendSummary()
+        return {
+          text: 'Spend today (' + summary.date + '):\nTokens: ' + summary.dailyTokens + '\nCost: $' + summary.dailyUsd.toFixed(6)
+        }
+      }
+      if (msg.text === '/report') {
+        return { text: orchestrator.spendReport() }
+      }
+      if (msg.text === '/model') {
+        return { text: 'Current model: ' + model }
+      }
+      const response = await orchestrator.handle({
+        userId: msg.userId,
+        sessionId: 'whatsapp-' + msg.userId,
+        text: msg.text,
+        channel: 'whatsapp',
+      })
+      return { text: response.text, blocked: response.blocked }
+    },
+  })
+  whatsapp.start()
+} else {
+  console.log('[WhatsApp] Set WHATSAPP_ENABLED=true in .env to enable')
 }

@@ -3,3 +3,6 @@ export type { TelegramConfig, TelegramIncoming, TelegramOutgoing } from './teleg
 
 export { DiscordChannel } from './discord.ts'
 export type { DiscordConfig, DiscordIncoming, DiscordOutgoing } from './discord.ts'
+
+export { WhatsAppChannel } from './whatsapp.ts'
+export type { WhatsAppConfig, WhatsAppIncoming, WhatsAppOutgoing } from './whatsapp.ts'
