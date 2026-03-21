@@ -3,7 +3,8 @@ import { resolve } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
-config({ path: resolve(__dirname, '../../../.env') })
+config({ path: 'C:/Users/dasay/openocean/.env' })
+console.log('[OpenOcean] Env loaded - MODEL:', process.env.OPENOCEAN_MODEL, 'KEY:', process.env.NVIDIA_API_KEY ? 'found' : 'missing')
 
 import { createGateway } from './gateway.ts'
 import { Orchestrator } from './orchestrator.ts'
@@ -12,7 +13,12 @@ import { DiscordChannel } from '../../channels/src/discord.ts'
 import { WhatsAppChannel } from '../../channels/src/whatsapp.ts'
 
 const model = process.env.OPENOCEAN_MODEL ?? 'mock'
-const apiKey = process.env.OPENOCEAN_API_KEY ?? 'mock'
+const apiKey =
+  process.env.NVIDIA_API_KEY ??
+  process.env.DEEPSEEK_API_KEY ??
+  process.env.GEMINI_API_KEY ??
+  process.env.OPENOCEAN_API_KEY ??
+  'mock'
 const telegramToken = process.env.TELEGRAM_BOT_TOKEN ?? ''
 const discordToken = process.env.DISCORD_BOT_TOKEN ?? ''
 
@@ -25,7 +31,7 @@ const discordAllowedUsers = (process.env.DISCORD_ALLOWED_USERS ?? '')
 const whatsappAllowedNumbers = (process.env.WHATSAPP_ALLOWED_NUMBERS ?? '')
   .split(',').map(s => s.trim()).filter(Boolean)
 
-console.log('[OpenOcean] Starting with model: ' + model)
+console.log('[OpenOcean] API key starts with: ' + apiKey.slice(0, 10))
 
 const orchestrator = new Orchestrator({
   allowedUsers: [

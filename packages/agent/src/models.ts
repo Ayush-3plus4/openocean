@@ -11,6 +11,7 @@ export type ModelProvider =
   | 'google'
   | 'deepseek'
   | 'qwen'
+  | 'nvidia'
 
 export interface ModelDefinition {
   provider: ModelProvider
@@ -128,6 +129,14 @@ export const MODELS: Record<string, ModelDefinition> = {
     costPer1kInputTokens: 0.00005,
     costPer1kOutputTokens: 0.0002,
     maxTokens: 8192,
+  },
+  'nvidia-qwen': {
+    provider: 'nvidia' as ModelProvider,
+    modelId: 'qwen/qwen3.5-122b-a10b',
+    label: 'Qwen 3.5 122B (Nvidia NIM)',
+    costPer1kInputTokens: 0,
+    costPer1kOutputTokens: 0,
+    maxTokens: 4096,
   },
 }
 

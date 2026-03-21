@@ -287,6 +287,65 @@ export const qwenAdapter: ProviderAdapter = {
     }
   }
 }
+export const nvidiaAdapter: ProviderAdapter = {
+  async complete(request, apiKey) {
+    const messages = [
+      {
+        role: 'system' as const,
+        content: request.systemPrompt ?? 'You are OpenOcean, a helpful personal AI assistant.',
+      },
+      ...request.messages.map(m => ({ role: m.role, content: m.content })),
+    ]
+
+    const body = {
+      model: 'qwen/qwen3.5-122b-a10b',
+      max_tokens: 1024,
+      temperature: 0.60,
+      top_p: 0.95,
+      stream: false,
+      messages,
+      chat_template_kwargs: { enable_thinking: false },
+    }
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 60000)
+
+    let res: Response
+    try {
+      res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + apiKey,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timeout)
+    }
+
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error('Nvidia API error ' + res.status + ': ' + err)
+    }
+
+    const data = await res.json() as {
+      choices: { message: { content: string } }[]
+      usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
+      model: string
+    }
+
+    return {
+      content: data.choices[0].message.content,
+      inputTokens: data.usage.prompt_tokens,
+      outputTokens: data.usage.completion_tokens,
+      totalTokens: data.usage.total_tokens,
+      model: data.model,
+      provider: 'nvidia',
+    }
+  }
+}
 // --------------------------------------------
 // Mock Provider (for testing without an API key)
 // --------------------------------------------

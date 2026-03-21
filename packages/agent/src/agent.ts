@@ -5,6 +5,7 @@ import {
   googleAdapter,
   deepseekAdapter,
   qwenAdapter,
+  nvidiaAdapter,
   mockAdapter,
 } from './providers.ts'
 import type { Message, CompletionRequest } from './providers.ts'
@@ -101,6 +102,7 @@ export class Agent {
       case 'deepseek':  return deepseekAdapter
       case 'qwen':      return qwenAdapter
       case 'mock':      return mockAdapter
+      case 'nvidia':    return nvidiaAdapter
       default:
         throw new Error('No adapter for provider: ' + provider)
     }
