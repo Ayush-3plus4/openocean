@@ -35,7 +35,8 @@ export class WhatsAppChannel {
 
   private isAllowed(number: string): boolean {
     if (this.config.allowedNumbers.length === 0) return true
-    return this.config.allowedNumbers.some(n => number.includes(n))
+    if (this.config.allowedNumbers.includes('*')) return true
+    return this.config.allowedNumbers.some(n => number.includes(n) || n.includes(number))
   }
 
   async start() {
@@ -116,7 +117,7 @@ export class WhatsAppChannel {
 
         if (!text) continue
 
-        const number = jid.replace('@s.whatsapp.net', '')
+        const number = jid.replace('@s.whatsapp.net', '').replace('@lid', '').split(':')[0]
         const userId = 'whatsapp:' + number
 
         if (!this.isAllowed(number)) {
