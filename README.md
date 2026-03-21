@@ -44,7 +44,7 @@ No API key yet? Use the built-in mock provider to try OpenOcean for free.
 
 ### Requirements
 
-- Node.js 22 or higher
+- Requires Node.js 22+
 - pnpm 9 or higher
 - Git
 
