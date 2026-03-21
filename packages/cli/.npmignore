@@ -1,0 +1,6 @@
+*.test.ts
+*.spec.ts
+node_modules/
+dist/
+.env
+.env.*

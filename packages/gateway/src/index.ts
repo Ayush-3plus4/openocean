@@ -3,7 +3,7 @@ import { resolve } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
-config({ path: 'C:/Users/dasay/openocean/.env' })
+config({ path: resolve(process.cwd(), '.env') })
 console.log('[OpenOcean] Env loaded - MODEL:', process.env.OPENOCEAN_MODEL, 'KEY:', process.env.NVIDIA_API_KEY ? 'found' : 'missing')
 
 import { createGateway } from './gateway.ts'
