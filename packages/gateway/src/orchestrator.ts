@@ -1,11 +1,7 @@
-// ============================================
-// OpenOcean Orchestrator
-// Now with full spend tracking per session
-// ============================================
-
 import { Allowlist, SpendGuard, PermissionChecker } from './security.ts'
 import { Agent } from '../../agent/src/agent.ts'
 import { SpendTracker } from '../../storage/src/spend.ts'
+import { SessionStore } from '../../storage/src/sessions.ts'
 import { resolve } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -43,6 +39,7 @@ export class Orchestrator {
   private permissions: PermissionChecker
   private agents: Map<string, Agent> = new Map()
   private spendTracker: SpendTracker
+  private sessionStore: SessionStore
   private config: OrchestratorConfig
 
   constructor(config: OrchestratorConfig) {
@@ -65,6 +62,10 @@ export class Orchestrator {
     })
 
     this.spendTracker = new SpendTracker({
+      dataDir: resolve(__dirname, '../../../.openocean'),
+    })
+
+    this.sessionStore = new SessionStore({
       dataDir: resolve(__dirname, '../../../.openocean'),
     })
 
@@ -102,7 +103,6 @@ export class Orchestrator {
 
       this.spendGuard.record(msg.sessionId, response.tokensUsed)
 
-      // Record in spend tracker
       this.spendTracker.record({
         sessionId: msg.sessionId,
         channel: msg.channel,
@@ -112,6 +112,20 @@ export class Orchestrator {
         inputTokens: Math.floor(response.tokensUsed * 0.6),
         outputTokens: Math.floor(response.tokensUsed * 0.4),
         totalTokens: response.tokensUsed,
+        costUsd: response.costUsd,
+      })
+
+      this.sessionStore.addMessage(msg.sessionId, msg.channel, msg.userId, {
+        role: 'user',
+        content: msg.text,
+      })
+
+      this.sessionStore.addMessage(msg.sessionId, msg.channel, msg.userId, {
+        role: 'assistant',
+        content: response.content,
+        model: response.model,
+        provider: response.provider,
+        tokensUsed: response.tokensUsed,
         costUsd: response.costUsd,
       })
 
@@ -140,13 +154,11 @@ export class Orchestrator {
     return this.spendGuard.summary()
   }
 
-  // Full detailed spend report
   spendReport(): string {
     const summary = this.spendTracker.todaySummary()
     return this.spendTracker.formatSummary(summary)
   }
 
-  // Last 7 days
   weeklyReport(): string {
     const days = this.spendTracker.lastNDays(7)
     let text = 'Weekly spend report\n'
@@ -155,6 +167,24 @@ export class Orchestrator {
       if (day.totalMessages === 0) continue
       text += day.date + ': ' + day.totalMessages + ' messages, ' +
         day.totalTokens + ' tokens, $' + day.totalCostUsd.toFixed(6) + '\n'
+    }
+    return text
+  }
+
+  sessionHistory(sessionId: string): string {
+    const session = this.sessionStore.getSession(sessionId)
+    if (!session) return 'No session found with ID: ' + sessionId
+    return this.sessionStore.formatSession(session)
+  }
+
+  listSessions(): string {
+    const sessions = this.sessionStore.listSessions()
+    if (sessions.length === 0) return 'No sessions recorded yet.'
+    let text = 'All sessions:\n================================\n'
+    for (const s of sessions) {
+      text += s.id + '\n'
+      text += '  Channel: ' + s.channel + ' | User: ' + s.userId + '\n'
+      text += '  Messages: ' + s.messages.length + ' | Started: ' + s.createdAt + '\n\n'
     }
     return text
   }

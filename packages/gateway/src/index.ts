@@ -75,6 +75,12 @@ if (telegramToken) {
       if (msg.text === '/report') {
         return { text: orchestrator.spendReport() }
       }
+      if (msg.text === '/history') {
+        return { text: orchestrator.sessionHistory('telegram-' + msg.userId) }
+      }
+      if (msg.text === '/sessions') {
+        return { text: orchestrator.listSessions() }
+      }
       if (msg.text === '/week') {
         return { text: orchestrator.weeklyReport() }
       }
@@ -114,6 +120,12 @@ if (discordToken) {
       if (msg.text === '/report') {
         return { text: orchestrator.spendReport() }
       }
+      if (msg.text === '/history') {
+        return { text: orchestrator.sessionHistory('discord-' + msg.userId) }
+      }
+      if (msg.text === '/sessions') {
+        return { text: orchestrator.listSessions() }
+      }
       if (msg.text === '/week') {
         return { text: orchestrator.weeklyReport() }
       }
@@ -150,6 +162,12 @@ if (process.env.WHATSAPP_ENABLED === 'true') {
       }
       if (msg.text === '/report') {
         return { text: orchestrator.spendReport() }
+      }
+      if (msg.text === '/history') {
+        return { text: orchestrator.sessionHistory('whatsapp-' + msg.userId) }
+      }
+      if (msg.text === '/sessions') {
+        return { text: orchestrator.listSessions() }
       }
       if (msg.text === '/model') {
         return { text: 'Current model: ' + model }
