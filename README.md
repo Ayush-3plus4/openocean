@@ -121,6 +121,8 @@ Send these to your bot on any channel:
 - /report — full detailed spend report
 - /week — last 7 days summary
 - /model — show current AI model
+- /history — full conversation history with timestamps and token counts
+- /sessions — list all recorded sessions
 
 ## Security
 
@@ -135,7 +137,7 @@ OpenOcean is built security-first:
 
 ## Roadmap
 
-- Session replay — time-travel debugging
+- Session replay — done
 - OpenOcean Hub — curated skill registry
 - Slack channel
 - Signal channel

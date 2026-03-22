@@ -1,10 +1,10 @@
 {
   "name": "openocean",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Your personal AI assistant. Clean, secure, malware-free. Runs on Telegram, Discord and WhatsApp.",
   "type": "module",
   "bin": {
-    "openocean": "./bin/openocean.js"
+    "openocean": "bin/openocean"
   },
   "scripts": {
     "build": "node --experimental-strip-types src/build.ts",
@@ -32,7 +32,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Ayush-3plus4/openocean.git"
+    "url": "git+https://github.com/Ayush-3plus4/openocean.git"
   },
   "homepage": "https://github.com/Ayush-3plus4/openocean",
   "engines": {
