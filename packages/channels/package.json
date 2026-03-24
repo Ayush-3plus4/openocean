@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@hapi/boom": "^10.0.1",
+    "@slack/bolt": "^4.6.0",
     "@whiskeysockets/baileys": "7.0.0-rc.9",
     "discord.js": "^14.25.1",
     "grammy": "^1.21.0"

@@ -6,3 +6,6 @@ export type { DiscordConfig, DiscordIncoming, DiscordOutgoing } from './discord.
 
 export { WhatsAppChannel } from './whatsapp.ts'
 export type { WhatsAppConfig, WhatsAppIncoming, WhatsAppOutgoing } from './whatsapp.ts'
+
+export { SlackChannel } from './slack.ts'
+export type { SlackConfig, SlackIncoming, SlackOutgoing } from './slack.ts'
